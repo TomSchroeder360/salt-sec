@@ -14,7 +14,7 @@ import scala.util.{Failure, Success, Try}
 import utils.Cache.*
 import utils.Convertors.*
 
-class PayloadVerifierService {
+object PayloadVerifierService {
 
   val successMessage: Json = parse(""" {"status": "normal"} """).getOrElse(Json.Null)
   val failureMessage: Json = parse(""" {"status": "abnormal"} """).getOrElse(Json.Null)
@@ -93,7 +93,7 @@ class PayloadVerifierService {
     templates.find(_.name.equals(name)) match {
       case Some(param) if !param.types.exists(pType => verifyField(pType, value)) =>
         Some(s"invalid param ($part -> $name), allowed types (${param.types.map(_.name).toString()}) got (${value.name})")
-      case Some(_) => None // valid
+      case Some(_) => None
       case None => Some(s"invalid param ($part) , unknown field ($name)") // return missing field message.
     }
   }

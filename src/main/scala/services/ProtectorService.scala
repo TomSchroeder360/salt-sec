@@ -10,12 +10,11 @@ import utils.Convertors.*
 import io.circe.parser.*
 import org.http4s.InvalidMessageBodyFailure
 import services.ProtectorService
+import services.PayloadVerifierService as verifier
 
 import scala.util.{Failure, Success, Try}
 
 class ProtectorService:
-
-  val verifier: PayloadVerifierService = PayloadVerifierService()
 
   def save(model: Json): Try[Unit] = {
     PayloadModel
