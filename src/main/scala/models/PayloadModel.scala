@@ -1,6 +1,7 @@
 package models
 
 import io.circe.{Json, JsonObject}
+import models.PayloadModel.{BODY, parseFailure}
 import models.types.{ParamType, UrlMethodType}
 import org.http4s.InvalidMessageBodyFailure
 import utils.Convertors.*
@@ -18,38 +19,40 @@ object PayloadModel:
   val QUERY_PARAMS: String = "query_params"
   val HEADERS: String = "headers"
   val BODY: String = "body"
-  
-  def parse(json: Json): Try[PayloadModel] = {
-    if (!json.isObject){
-      return Failure(InvalidMessageBodyFailure(s"body is not a valid json object ${json.toString}"))
-    }
 
+  private def parseFailure(received: String): InvalidMessageBodyFailure =
+    InvalidMessageBodyFailure(s"expected entity with ($PATH, $METHOD, $QUERY_PARAMS, $HEADERS, $BODY). received: $received")
+
+  def parse(json: Json): Try[PayloadModel] = {
     json.asObject.map(_.toMap)
       .toTry(InvalidMessageBodyFailure(s"body is not an object"))
       .flatMap { jMap =>
         if (jMap.size != 5) {
           Failure(InvalidMessageBodyFailure(s"body does not have correct number of fields(5). json: ${jMap.toString()}"))
         } else {
-
-          for {
-            path <- jMap.get(PATH).flatMap(_.asString)
-              .toTry(InvalidMessageBodyFailure(s"path value not found"))
-            method <- jMap.get(METHOD).flatMap(_.asString)
-              .toTry(InvalidMessageBodyFailure(s"method value not found"))
-              .flatMap(methodType => 
-                methodType.toUrlMethodType.toTry(InvalidMessageBodyFailure(s"invalid method type $methodType")))
-            queryParams <- jMap.get(QUERY_PARAMS)
-              .toTry(InvalidMessageBodyFailure(s"query params value not found"))
-              .flatMap(json => parsePayloadParam(json, QUERY_PARAMS))
-            headers <- jMap.get(HEADERS)
-              .toTry(InvalidMessageBodyFailure(s"header value not found"))
-              .flatMap(json => parsePayloadParam(json, HEADERS))
-            body <- jMap.get(BODY)
-              .toTry(InvalidMessageBodyFailure(s"body value not found"))
-              .flatMap(json => parsePayloadParam(json, BODY))
-          } yield PayloadModel(method, path, query_params = queryParams, headers = headers, body = body)
+          parsePayloadMap(jMap)
         }
       }
+  }
+
+  private def parsePayloadMap(jMap: Map[String, Json]): Try[PayloadModel] = {
+    for {
+      path <- jMap.get(PATH).flatMap(_.asString)
+        .toTry(parseFailure(jMap.keys.toString()))
+      method <- jMap.get(METHOD).flatMap(_.asString)
+        .toTry(parseFailure(jMap.keys.toString()))
+        .flatMap(methodType =>
+          methodType.toUrlMethodType.toTry(InvalidMessageBodyFailure(s"invalid method type $methodType")))
+      queryParams <- jMap.get(QUERY_PARAMS)
+        .toTry(parseFailure(jMap.keys.toString()))
+        .flatMap(json => parsePayloadParam(json, QUERY_PARAMS))
+      headers <- jMap.get(HEADERS)
+        .toTry(parseFailure(jMap.keys.toString()))
+        .flatMap(json => parsePayloadParam(json, HEADERS))
+      body <- jMap.get(BODY)
+        .toTry(parseFailure(jMap.keys.toString()))
+        .flatMap(json => parsePayloadParam(json, BODY))
+    } yield PayloadModel(method, path, query_params = queryParams, headers = headers, body = body)
   }
 
   private def parsePayloadParam(json: Json, owner: String): Try[Seq[PayloadParam]] = {

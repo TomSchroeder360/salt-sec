@@ -11,7 +11,7 @@ object Convertors {
   extension [T](opt: Option[T]) def toTry(err: Throwable): Try[T] = opt.map(Success(_)).getOrElse(Failure(err))
 
   extension (value: String) def toParamType: Option[ParamType] =ParamType.values.find(param => value.equalsIgnoreCase(param.name))
-
+  
   extension (value: String) def toUrlMethodType: Option[UrlMethodType] = Try(UrlMethodType.valueOf(value)).toOption
 
   /**

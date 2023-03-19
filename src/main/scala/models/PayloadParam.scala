@@ -26,17 +26,21 @@ object PayloadParam:
         if (jMap.size != 3) {
           Failure(parseFailure(json.toString))
         } else {
-          for {
-            name <- jMap.get(NAME).flatMap(_.asString)
-              .toTry(parseFailure(json.toString))
-            types <- jMap.get(TYPES).flatMap(_.asArray)
-              .toTry(parseFailure(json.toString))
-              .flatMap(parseParamTypes)
-            required <- jMap.get(REQUIRED).flatMap(_.asBoolean)
-              .toTry(parseFailure(json.toString))
-          } yield PayloadParam(name, types, required)
+          parsePayloadMap(jMap)
         }
       })
+  }
+
+  private def parsePayloadMap(jMap: Map[String, Json]): Try[PayloadParam] = {
+    for {
+      name <- jMap.get(NAME).flatMap(_.asString)
+        .toTry(parseFailure(jMap.keys.toString()))
+      types <- jMap.get(TYPES).flatMap(_.asArray)
+        .toTry(parseFailure(jMap.keys.toString()))
+        .flatMap(parseParamTypes)
+      required <- jMap.get(REQUIRED).flatMap(_.asBoolean)
+        .toTry(parseFailure(jMap.keys.toString()))
+    } yield PayloadParam(name, types, required)
   }
 
   private def parseParamTypes(jSeq: Seq[Json]): Try[Seq[ParamType]] = {
