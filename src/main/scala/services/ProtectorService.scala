@@ -14,6 +14,9 @@ import services.ProtectorService
 import scala.util.{Failure, Success, Try}
 
 class ProtectorService:
+
+  val verifier: PayloadVerifierService = PayloadVerifierService()
+
   def save(model: Json): Try[Unit] = {
     PayloadModel
       .parse(model)
@@ -21,68 +24,16 @@ class ProtectorService:
   }
 
   def verify(entity: Json): Json = {
-    val issues = ProtectorService.verifyEntity(entity)
-    if (issues.isEmpty) ProtectorService.successMessage
+    // TODO we should be collecting also the abnormal fields themselves.
+    val issues = verifier.verifyEntity(entity)
+    if (issues.isEmpty) verifier.successMessage
     else {
-      // TODO add failureMessage
-      ProtectorService.appendErrorMessages(entity, issues)
+      val payload = verifier.appendErrorMessages(entity, issues)
+      verifier.failureMessage.hcursor.withFocus(_.mapObject(_.add("payload", payload))).top.get
     }
   }
 
 end ProtectorService
-
-object ProtectorService:
-  val successMessage: Json = parse(""" {"status": "normal"} """).getOrElse(Json.Null)
-  val failureMessage: Json = parse(""" {"status": "abnormal"} """).getOrElse(Json.Null)
-
-  private def verifyEntity(json: Json): Seq[String] = {
-    val templateTry = fetchTemplate(json)
-
-    templateTry match {
-      case Success(template) => validateFields(json, template)
-      case Failure(err) => List(err.getMessage)
-    }
-  }
-
-  private def validateFields(json: Json, payloadModel: PayloadModel): Seq[String] = {
-    val resOpt = json.asObject.map(_.toMap).map { objMap =>
-      PayloadVerifierController.verifyArr(objMap.get(PayloadModel.BODY), payloadModel.body, PayloadModel.BODY) ++
-        PayloadVerifierController.verifyArr(objMap.get(PayloadModel.HEADERS), payloadModel.headers, PayloadModel.HEADERS) ++
-        PayloadVerifierController.verifyArr(objMap.get(PayloadModel.QUERY_PARAMS), payloadModel.query_params, PayloadModel.QUERY_PARAMS)
-    }
-
-    resOpt.getOrElse(List(s"invalid payload structure"))
-  }
-
-  private def fetchTemplate(json: Json): Try[PayloadModel] ={
-    json.asObject.map(_.toMap)
-      .toTry(InvalidMessageBodyFailure(s"invalid payload"))
-      .flatMap(jMap => {
-      for {
-        path <- jMap.get(PayloadModel.PATH).flatMap(_.asString)
-          .toTry(InvalidMessageBodyFailure(s"invalid payload -> path"))
-        method <- jMap.get(PayloadModel.METHOD).flatMap(_.asString)
-          .toTry(InvalidMessageBodyFailure(s"invalid payload -> method"))
-        template <- urlTemplatesCache.getIfPresent((path, method))
-          .toTry(InvalidMessageBodyFailure(s"entity model not found"))
-      } yield template
-    })
-  }
-
-  private def appendErrorMessages(json: Json, errorMessages: Seq[String]): Json = {
-    if (errorMessages.isEmpty) json
-    else {
-      val message = StringBuilder().append("[")
-      errorMessages.map(msg => message.append(s"""$msg"""))
-      message.append("]")
-
-      // TODO remove .get
-      json.hcursor.withFocus(_.mapObject(_.add("abnormalities", parse(message.result).getOrElse(json)))).top.get
-    }
-  }
-
-end ProtectorService
-
 
 
 

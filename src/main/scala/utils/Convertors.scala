@@ -12,8 +12,7 @@ object Convertors {
 
   extension (value: String) def toParamType: Option[ParamType] =ParamType.values.find(param => value.equalsIgnoreCase(param.name))
 
-  // TODO - Replace with option, to allow caller to handle missing/incorrect types.
-  extension (value: String) def toUrlMethodType: Try[UrlMethodType] = Try(UrlMethodType.valueOf(value))
+  extension (value: String) def toUrlMethodType: Option[UrlMethodType] = Try(UrlMethodType.valueOf(value)).toOption
 
   /**
    * Receives seq[Y], Returns Try[Seq[T]] -
