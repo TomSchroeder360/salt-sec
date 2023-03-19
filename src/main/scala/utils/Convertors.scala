@@ -7,15 +7,12 @@ import models.types.{ParamType, UrlMethodType}
 import scala.util.{Success, Failure, Try}
 
 object Convertors {
+  
+  extension [T](opt: Option[T]) def toTry(err: Throwable): Try[T] = opt.map(Success(_)).getOrElse(Failure(err))
 
-  // add support for error message.
-  extension [T](opt: Option[T]) def toTry: Try[T] = Try(opt.get)
+  extension (value: String) def toParamType: Option[ParamType] =ParamType.values.find(param => value.equalsIgnoreCase(param.name))
 
-  extension (opt: Option[_]) def toTry2(err: Throwable): Try[_] = opt.map(Success(_)).getOrElse(Failure(err))
-
-  extension (value: String) def toParamType: Try[ParamType] =ParamType.values.find(param => value.equalsIgnoreCase(param.name)).toTry
-
-  // Maybe use valueOf.
+  // TODO - Replace with option, to allow caller to handle missing/incorrect types.
   extension (value: String) def toUrlMethodType: Try[UrlMethodType] = Try(UrlMethodType.valueOf(value))
 
   /**

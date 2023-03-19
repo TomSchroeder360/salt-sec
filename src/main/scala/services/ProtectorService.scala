@@ -8,6 +8,7 @@ import models.types.UrlMethodType
 import utils.Cache.*
 import utils.Convertors.*
 import io.circe.parser.*
+import org.http4s.InvalidMessageBodyFailure
 import services.ProtectorService
 
 import scala.util.{Failure, Success, Try}
@@ -44,20 +45,26 @@ object ProtectorService:
   }
 
   private def validateFields(json: Json, payloadModel: PayloadModel): Seq[String] = {
-    // TODO - handle invalid object.
-    val objMap = json.asObject.map(_.toMap).get
-
-    PayloadVerifierController.verifyArr(objMap.get(PayloadModel.BODY), payloadModel.body, PayloadModel.BODY) ++
-      PayloadVerifierController.verifyArr(objMap.get(PayloadModel.HEADERS), payloadModel.headers, PayloadModel.HEADERS) ++
-      PayloadVerifierController.verifyArr(objMap.get(PayloadModel.QUERY_PARAMS), payloadModel.query_params, PayloadModel.QUERY_PARAMS)
+    val resOpt = json.asObject.map(_.toMap).map { objMap =>
+      PayloadVerifierController.verifyArr(objMap.get(PayloadModel.BODY), payloadModel.body, PayloadModel.BODY) ++
+        PayloadVerifierController.verifyArr(objMap.get(PayloadModel.HEADERS), payloadModel.headers, PayloadModel.HEADERS) ++
+        PayloadVerifierController.verifyArr(objMap.get(PayloadModel.QUERY_PARAMS), payloadModel.query_params, PayloadModel.QUERY_PARAMS)
+    }
+    
+    resOpt.getOrElse(List(s"invalid payload structure"))
   }
 
   private def fetchTemplate(json: Json): Try[PayloadModel] ={
-    json.asObject.map(_.toMap).toTry.flatMap(jMap => {
+    json.asObject.map(_.toMap)
+      .toTry(InvalidMessageBodyFailure(s"invalid payload"))
+      .flatMap(jMap => {
       for {
-        path <- jMap.get(PayloadModel.PATH).flatMap(_.asString).toTry
-        method <- jMap.get(PayloadModel.METHOD).flatMap(_.asString).toTry
-        template <- urlTemplatesCache.getIfPresent((path, method)).toTry
+        path <- jMap.get(PayloadModel.PATH).flatMap(_.asString)
+          .toTry(InvalidMessageBodyFailure(s"invalid payload -> path"))
+        method <- jMap.get(PayloadModel.METHOD).flatMap(_.asString)
+          .toTry(InvalidMessageBodyFailure(s"invalid payload -> method"))
+        template <- urlTemplatesCache.getIfPresent((path, method))
+          .toTry(InvalidMessageBodyFailure(s"entity model not found"))
       } yield template
     })
   }
