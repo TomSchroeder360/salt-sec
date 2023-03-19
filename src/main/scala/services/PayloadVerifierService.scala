@@ -14,10 +14,15 @@ import scala.util.{Failure, Success, Try}
 import utils.Cache.*
 import utils.Convertors.*
 
+import scala.util.matching.Regex
+
 object PayloadVerifierService {
 
   val successMessage: Json = parse(""" {"status": "normal"} """).getOrElse(Json.Null)
   val failureMessage: Json = parse(""" {"status": "abnormal"} """).getOrElse(Json.Null)
+
+  val authTokenStarter = "Bearer "
+  val authTokenPattern = """[^0-9A-Za-z]+""".r
 
   def verifyEntity(json: Json): Seq[String] = {
     val templateTry = fetchTemplate(json)
@@ -74,7 +79,7 @@ object PayloadVerifierService {
         case Some(x) if x.isEmpty => List.empty
         case Some(x) if x.nonEmpty && templates.isEmpty =>
           // TODO add field names.
-          List(s"unknown fields in ($part), fields: ...")
+          List(s"unknown fields in ($part), fields: (...)")
         case Some(params) =>
           params.map(param => verifyParam(param, templates, part)).flatten
         case None =>
@@ -107,7 +112,12 @@ object PayloadVerifierService {
       case ParamType.BooleanType => value.asBoolean.nonEmpty
       case ParamType.DateType => value.asString.flatMap(DateUtils.parseDate).nonEmpty
       case ParamType.ListType =>  value.asArray.nonEmpty
-      case ParamType.AuthTokenType => false
+      case ParamType.AuthTokenType =>
+        value.asString.exists(token =>
+          token.startsWith(authTokenStarter)
+          // fix
+          //authTokenPattern.pattern.matcher(token.substring(authTokenStarter.size)).matches
+        )
       case ParamType.EmailType => false
       case ParamType.UUIDType => false
     }
