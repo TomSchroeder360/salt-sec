@@ -12,6 +12,4 @@ object Cache {
       .recordStats()
       .maximumSize(10000)
       .build[(String, String), PayloadModel]()
-//  private val modelCaffeineCache = Caffeine.newBuilder().maximumSize(10000L).build[String, Entry[Json]]
-//  implicit val modelCache: Cache[IO, String, Json] = CaffeineCache(modelCaffeineCache)
 }
