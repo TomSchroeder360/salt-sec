@@ -7,7 +7,6 @@ import utils.Convertors._
 
 import scala.util.{Failure, Try}
 
-
 case class PayloadParam(name: String, types: Seq[ParamType], isRequired: Boolean)
 
 object PayloadParam:
@@ -16,30 +15,34 @@ object PayloadParam:
   val TYPES: String = "types"
   val REQUIRED: String = "required"
 
-  def retreiveMandatories(paramsSeq: Seq[PayloadParam]): Seq[PayloadParam] = {
-    paramsSeq.filter(_.isRequired)
-  }
-  def parse(json: Json): Try[PayloadParam] = {
-    if (!json.isObject) {
-      return Failure(InvalidMessageBodyFailure(s"body is not a valid json object ${json.toString}"))
-    }
+  private def parseFailure(received: String): InvalidMessageBodyFailure =
+    InvalidMessageBodyFailure(s"expected entity with (name, types, required). received: $received")
 
-    json.asObject.map(_.toMap).toTry
+
+  def parse(json: Json): Try[PayloadParam] = {
+    json.asObject.map(_.toMap)
+      .toTry(parseFailure(json.toString))
       .flatMap(jMap =>{
         if (jMap.size != 3) {
-          Failure(InvalidMessageBodyFailure(s"body PARAM does not have correct number of fields(3). json: ${jMap.toString()}"))
+          Failure(parseFailure(json.toString))
         } else {
           for {
-            name <- jMap.get(NAME).flatMap(_.asString).toTry
-            types <- jMap.get(TYPES).flatMap(_.asArray).toTry.flatMap(parseParamTypes)
-            required <- jMap.get(REQUIRED).flatMap(_.asBoolean).toTry
+            name <- jMap.get(NAME).flatMap(_.asString)
+              .toTry(parseFailure(json.toString))
+            types <- jMap.get(TYPES).flatMap(_.asArray)
+              .toTry(parseFailure(json.toString))
+              .flatMap(parseParamTypes)
+            required <- jMap.get(REQUIRED).flatMap(_.asBoolean)
+              .toTry(parseFailure(json.toString))
           } yield PayloadParam(name, types, required)
         }
       })
   }
 
   private def parseParamTypes(jSeq: Seq[Json]): Try[Seq[ParamType]] = {
-    jSeq.parseSeq[ParamType](_.asString.toTry.flatMap(_.toParamType))
+    jSeq.parseSeq[ParamType](_.asString
+      .flatMap(_.toParamType)
+      .toTry(InvalidMessageBodyFailure(s"received an invalid type: ${jSeq.toString}")))
   }
 
 end PayloadParam

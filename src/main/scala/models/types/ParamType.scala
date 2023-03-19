@@ -15,6 +15,3 @@ enum ParamType(val name: String):
   case AuthTokenType extends ParamType("Auth-Token")
 end ParamType
 
-object ParamTypeUtil:
-  def isValidParam(param: ParamType, value: String): Boolean = ???
-end ParamTypeUtil

@@ -24,32 +24,38 @@ object PayloadModel:
       return Failure(InvalidMessageBodyFailure(s"body is not a valid json object ${json.toString}"))
     }
 
-    json.asObject.map(_.toMap).toTry
+    json.asObject.map(_.toMap)
+      .toTry(InvalidMessageBodyFailure(s"body is not an object"))
       .flatMap { jMap =>
         if (jMap.size != 5) {
           Failure(InvalidMessageBodyFailure(s"body does not have correct number of fields(3). json: ${jMap.toString()}"))
         } else {
 
           for {
-            path <- jMap.get(PATH).flatMap(_.asString).toTry
-            method <- jMap.get(METHOD).flatMap(_.asString).toTry.flatMap(_.toUrlMethodType)
-            queryParams <- jMap.get(QUERY_PARAMS).toTry.flatMap(parsePayloadParam)
-            headers <- jMap.get(HEADERS).toTry.flatMap(parsePayloadParam)
-            body <- jMap.get(BODY).toTry.flatMap(parsePayloadParam)
+            path <- jMap.get(PATH).flatMap(_.asString)
+              .toTry(InvalidMessageBodyFailure(s"path value not found"))
+            method <- jMap.get(METHOD).flatMap(_.asString)
+              .toTry(InvalidMessageBodyFailure(s"method value not found"))
+              .flatMap(_.toUrlMethodType)
+            queryParams <- jMap.get(QUERY_PARAMS)
+              .toTry(InvalidMessageBodyFailure(s"query params value not found"))
+              .flatMap(json => parsePayloadParam(json, QUERY_PARAMS))
+            headers <- jMap.get(HEADERS)
+              .toTry(InvalidMessageBodyFailure(s"header value not found"))
+              .flatMap(json => parsePayloadParam(json, HEADERS))
+            body <- jMap.get(BODY)
+              .toTry(InvalidMessageBodyFailure(s"body value not found"))
+              .flatMap(json => parsePayloadParam(json, BODY))
           } yield PayloadModel(method, path, query_params = queryParams, headers = headers, body = body)
         }
       }
   }
 
-  private def parsePayloadParam(json: Json): Try[Seq[PayloadParam]] = {
-    json.asArray.toTry.flatMap(_.parseSeq[PayloadParam](PayloadParam.parse))
+  private def parsePayloadParam(json: Json, owner: String): Try[Seq[PayloadParam]] = {
+    json.asArray
+      .toTry(InvalidMessageBodyFailure(s"expected payload ($owner) should be array"))
+      .flatMap(_.parseSeq[PayloadParam](PayloadParam.parse))
   }
 
 end PayloadModel
-
-enum PayloadModelFields(val name: String):
-
-  case path extends PayloadModelFields("path")
-
-end PayloadModelFields
 
