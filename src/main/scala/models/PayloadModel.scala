@@ -28,7 +28,7 @@ object PayloadModel:
       .toTry(InvalidMessageBodyFailure(s"body is not an object"))
       .flatMap { jMap =>
         if (jMap.size != 5) {
-          Failure(InvalidMessageBodyFailure(s"body does not have correct number of fields(3). json: ${jMap.toString()}"))
+          Failure(InvalidMessageBodyFailure(s"body does not have correct number of fields(5). json: ${jMap.toString()}"))
         } else {
 
           for {
@@ -36,7 +36,8 @@ object PayloadModel:
               .toTry(InvalidMessageBodyFailure(s"path value not found"))
             method <- jMap.get(METHOD).flatMap(_.asString)
               .toTry(InvalidMessageBodyFailure(s"method value not found"))
-              .flatMap(_.toUrlMethodType)
+              .flatMap(methodType => 
+                methodType.toUrlMethodType.toTry(InvalidMessageBodyFailure(s"invalid method type $methodType")))
             queryParams <- jMap.get(QUERY_PARAMS)
               .toTry(InvalidMessageBodyFailure(s"query params value not found"))
               .flatMap(json => parsePayloadParam(json, QUERY_PARAMS))
