@@ -24,8 +24,6 @@ object ProtectorRoute:
       req.as[Json].flatMap(body => protector.save(body) match {
         case Success(_) => Ok()
         case Failure(err: InvalidMessageBodyFailure) => BadRequest(err.getMessage)
-        // Should not occur anymore
-        // case Failure(err: NoSuchElementException) => BadRequest(err.getMessage)
         case Failure(err) =>
           Console.println(s"Something bad happened: ${err}")
           InternalServerError("An unexpected failure occurred")
