@@ -24,7 +24,6 @@ class ProtectorService:
   }
 
   def verify(entity: Json): Json = {
-    // TODO we should be collecting also the abnormal fields themselves.
     val issues = verifier.verifyEntity(entity)
     if (issues.isEmpty) verifier.successMessage
     else {

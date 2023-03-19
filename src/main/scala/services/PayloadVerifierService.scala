@@ -34,10 +34,8 @@ class PayloadVerifierService {
       val message = StringBuilder().append("[")
       errorMessages.map(msg => message.append(s""" "$msg" """))
       message.append("]")
-
       val msgJson = parse(message.result).getOrElse(Json.Null)
-
-      // TODO remove .get
+      
       json.hcursor.withFocus(_.mapObject(_.add("abnormalities", msgJson))).top.get
     }
   }
@@ -86,7 +84,6 @@ class PayloadVerifierService {
 
   private def verifyParam(json: Json, templates: Seq[PayloadParam], part: String): Option[String] = {
     // TODO - can we relay on the payload structure being correct (name/value)?
-    //  REMOVE ".get"
     val objMap = json.asObject.map(_.toMap).get
     val name = objMap.get("name").get.asString.get
     val value = objMap.get("value").get
