@@ -50,7 +50,7 @@ object ProtectorService:
         PayloadVerifierController.verifyArr(objMap.get(PayloadModel.HEADERS), payloadModel.headers, PayloadModel.HEADERS) ++
         PayloadVerifierController.verifyArr(objMap.get(PayloadModel.QUERY_PARAMS), payloadModel.query_params, PayloadModel.QUERY_PARAMS)
     }
-    
+
     resOpt.getOrElse(List(s"invalid payload structure"))
   }
 
@@ -69,15 +69,15 @@ object ProtectorService:
     })
   }
 
-  private def appendErrorMessages(json: Json, err: Seq[String]): Json = {
-    if (err.isEmpty) json
+  private def appendErrorMessages(json: Json, errorMessages: Seq[String]): Json = {
+    if (errorMessages.isEmpty) json
     else {
-      // TODO build message.
-      val msg = ""
+      val message = StringBuilder().append("[")
+      errorMessages.map(msg => message.append(s"""$msg"""))
+      message.append("]")
 
-      // TODO - should use arrayOrObject to cover all types not just mapObject.
-      // TODO - handle parse failure.
-      json.hcursor.withFocus(_.mapObject(_.add("abnormalities", parse(msg).getOrElse(json)))).top.get
+      // TODO remove .get
+      json.hcursor.withFocus(_.mapObject(_.add("abnormalities", parse(message.result).getOrElse(json)))).top.get
     }
   }
 

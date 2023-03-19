@@ -29,7 +29,7 @@ object PayloadVerifierController {
 
   private def verifyParam(json: Json, templates: Seq[PayloadParam], part: String): Option[String] = {
     // TODO can we relay on the payload structure being correct (name/value)?
-    //  or should we consider invalid payload structure as abnormalities?
+    //  REMOVE ".get"
     val objMap = json.asObject.map(_.toMap).get
     val name = objMap.get("name").get.asString.get
     val value = objMap.get("value").get
@@ -56,7 +56,6 @@ object PayloadVerifierController {
       case ParamType.AuthTokenType => false
       case ParamType.EmailType => false
       case ParamType.UUIDType => false
-      case _ => false
     }
   }
 
