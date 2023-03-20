@@ -32,8 +32,3 @@ class ProtectorService:
   }
 
 end ProtectorService
-
-
-
-  
-  
