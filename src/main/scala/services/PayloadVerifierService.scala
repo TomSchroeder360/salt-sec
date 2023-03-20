@@ -70,7 +70,6 @@ object PayloadVerifierService {
       })
   }
 
-
   private def verifyArr(jsonOpt: Option[Json], templates: Seq[PayloadParam], part: String): Seq[String] = {
     jsonOpt.fold(List(s"missing $part"))(json => json.asArray match {
         case Some(x) if x.isEmpty && templates.exists(_.isRequired) =>
@@ -103,7 +102,6 @@ object PayloadVerifierService {
     }
   }
 
-
   // TODO - implement validators
   private def verifyField(param: ParamType, value: Json): Boolean = {
     param match {
@@ -122,5 +120,4 @@ object PayloadVerifierService {
       case ParamType.UUIDType => false
     }
   }
-
 }
