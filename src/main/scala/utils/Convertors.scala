@@ -20,7 +20,7 @@ object Convertors {
    */
   extension [Y](jSeq: Seq[Y]) def parseSeq[T](handler: Y => Try[T]): Try[Seq[T]] = {
     jSeq.iterator.foldLeft(Try(Seq.empty[T])) {
-      (optionalSeq, innerJson) => optionalSeq.flatMap(seq => handler(innerJson).map(_ +: seq))
+      (optionalSeq, entity) => optionalSeq.flatMap(seq => handler(entity).map(_ +: seq))
     }
   }
 }
