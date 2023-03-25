@@ -1,12 +1,9 @@
 package utils
 
-import io.circe.Json
-import models.*
 import models.types.{ParamType, UrlMethodType}
-
 import scala.util.{Success, Failure, Try}
 
-object Convertors {
+object Convertors:
   
   extension [T](opt: Option[T]) def toTry(err: Throwable): Try[T] = opt.map(Success(_)).getOrElse(Failure(err))
 
@@ -18,9 +15,11 @@ object Convertors {
    * Receives seq[Y], Returns Try[Seq[T]] -
    * Tries to convert every Y to T. first failure will propagate to caller.
    */
-  extension [Y](jSeq: Seq[Y]) def parseSeq[T](handler: Y => Try[T]): Try[Seq[T]] = {
-    jSeq.iterator.foldLeft(Try(Seq.empty[T])) {
-      (optionalSeq, entity) => optionalSeq.flatMap(seq => handler(entity).map(_ +: seq))
-    }
-  }
-}
+// Not used
+//  extension [Y](jSeq: Seq[Y]) def parseSeq[T](handler: Y => Try[T]): Try[Seq[T]] = {
+//    jSeq.iterator.foldLeft(Try(Seq.empty[T])) {
+//      (optionalSeq, value) => optionalSeq.flatMap(seq => handler(value).map(_ +: seq))
+//    }
+//  }
+
+end Convertors

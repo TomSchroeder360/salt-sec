@@ -1,9 +1,5 @@
 package models.types
 
-import utils.Convertors
-import io.circe.Json
-import io.circe.Json._
-
 enum ParamType(val name: String):
   case StringType extends ParamType("String")
   case IntType extends ParamType("Int")
@@ -14,4 +10,3 @@ enum ParamType(val name: String):
   case UUIDType extends ParamType("UUID")
   case AuthTokenType extends ParamType("Auth-Token")
 end ParamType
-

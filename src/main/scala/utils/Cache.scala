@@ -1,15 +1,13 @@
 package utils
 
 import com.github.blemale.scaffeine.{Cache, Scaffeine}
-import io.circe.Json
-import models.PayloadModel
-import models.types.UrlMethodType
+import models.TemplateModel
 
-object Cache {
-
-  val urlTemplatesCache: Cache[(String, String), PayloadModel] =
+object Cache:
+  val urlTemplatesCache: Cache[(String, String), TemplateModel] =
     Scaffeine()
       .recordStats()
       .maximumSize(10000)
-      .build[(String, String), PayloadModel]()
-}
+      .build[(String, String), TemplateModel]()
+
+end Cache
